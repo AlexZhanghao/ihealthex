@@ -1,0 +1,11 @@
+/Bin/*
+/Debug/*
+/Lib/*
+/Release/*
+!/Release/main_wnd.xml
+/Temp/*
+
+*.VC.db
+*.suo
+*.sdf
+*.ipch
