@@ -10,3 +10,6 @@
 *.sdf
 *.ipch
 .vs
+Debug
+Release
+x64
