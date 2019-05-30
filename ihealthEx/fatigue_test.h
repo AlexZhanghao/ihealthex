@@ -43,6 +43,7 @@ private:
 	//将转换后的值进行滤波-二阶巴特沃斯低通滤波器
 	void Trans2Filter(double TransData[6], double FiltedData[6]);
 	void FiltedVolt2Vel(double FiltedData[6]);
+
 private:
 	bool is_initialed = false;
 	bool in_test_move = false;

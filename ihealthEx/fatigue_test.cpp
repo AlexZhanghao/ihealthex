@@ -56,6 +56,8 @@ void FatigueTest::StartMove() {
 		Trans2Filter(distData, filtedData);
 		FiltedVolt2Vel(filtedData);
 
+
+
 		//注意这里我们传入的顺序是fxfyfzMxMyMz,现在传的是裸值，以后如果你要传入
 		//经过转换后的值的话，传入的顺序也要是fxfyfzMxMyMz(转换后的值力和力矩的位置是交换了的)
 		UpdataDataArray(readings);
@@ -346,6 +348,7 @@ void FatigueTest::FiltedVolt2Vel(double FiltedData[6]) {
 		Six_Sensor_Convert(i) = FiltedData[i];
 	}
 	damping_control(Six_Sensor_Convert, Pos, Vel, Force_Fc, Force_a, Force_b);
+
 	m_shoulder_vel = Vel(0, 0);
 	m_elbow_vel = Vel(1, 0);
 

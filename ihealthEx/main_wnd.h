@@ -8,9 +8,10 @@
 
 #ifdef _DEBUG
 #	if defined(_UNICODE) || defined(UNICODE)
-#		pragma comment(lib, "CChart_ud.lib")
+#       pragma comment(lib, "CChartu.lib")
+
 #	else
-#		pragma comment(lib, "CChart_d.lib")
+#		pragma comment(lib, "CChart.lib")
 #	endif
 #else
 #	if defined(_UNICODE) || defined(UNICODE)
@@ -20,6 +21,7 @@
 #	endif
 #endif
 
+using namespace NsCChart;
 using namespace DuiLib;
 
 class CWndUI : public CControlUI {

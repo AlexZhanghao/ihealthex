@@ -216,6 +216,9 @@ void damping_control(const MatrixBase<DerivedA>& Fh, MatrixBase<DerivedB>& U, Ma
 					//灵敏了的调整。然后最后要转换，把电机的速度变为角度，因为我们外面是用的角度。
 	Ub = con*(p_X*Co*Fh*Fc*0.1);
 }
+
+
+
 template<typename DerivedA, typename DerivedB>
 void fwd_geo_kineB(const MatrixBase<DerivedA>& theta, MatrixBase<DerivedB>& T0h) {
 	Matrix4d exp_m[5];
