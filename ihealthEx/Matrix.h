@@ -68,7 +68,7 @@ const Vector3d AxisPosition[5] = {
 
 //这个函数实际上就是在计算运动旋量ζ
 template<typename DerivedA, typename DerivedB, typename DerivedC>
-void CalcTwist(const MatrixBase<DerivedA>& axis, const MatrixBase<DerivedB>&pos, MatrixBase<DerivedC>& twist) {
+void CalculateSpinor(const MatrixBase<DerivedA>& axis, const MatrixBase<DerivedB>&pos, MatrixBase<DerivedC>& twist) {
 	Matrix3d axis_hat;
 	twist.setZero();
 	axis_hat <<
@@ -112,7 +112,7 @@ void Ad426(const MatrixBase<DerivedA>& X, MatrixBase<DerivedB>& A) {
 	A.block(3, 0, 3, 3) = Y*X.block(0, 0, 3, 3);
 }
 template<typename DerivedA, typename DerivedB>
-void h2V(const MatrixBase<DerivedA>& X, MatrixBase<DerivedB>& b) {
+void MatrixToVector(const MatrixBase<DerivedA>& X, MatrixBase<DerivedB>& b) {
 	//这里出来的这个b就是旋转矢量ξ，只不过是因为我们之前的Bh是个4*4，这里又把它弄回来了而已
 	//这里的b就是6*1的了
 	b(0) = -X(1, 2);
@@ -122,7 +122,7 @@ void h2V(const MatrixBase<DerivedA>& X, MatrixBase<DerivedB>& b) {
 }
 
 template<typename DerivedA, typename DerivedB>
-void fwd_geo_coup(const MatrixBase<DerivedA>& U, MatrixBase<DerivedB>& theta) {
+void MotorAngleToJointAngle(const MatrixBase<DerivedA>& U, MatrixBase<DerivedB>& theta) {
 	MatrixXd meta(5, 2);
 	VectorXd thetab(5);
 
@@ -156,7 +156,7 @@ void damping_control(const MatrixBase<DerivedA>& Fh, MatrixBase<DerivedB>& U, Ma
 	MatrixXd G(6, 6);
 	//这里的U是电机的输出角度2*1（我们可以通过获取当前角度直接获得），然后theta是5*1，分别是
 	//5个关节的角度。下面这个函数就是把电机的角度转换为关节的角度。
-	fwd_geo_coup(U, theta);
+	MotorAngleToJointAngle(U, theta);
 
 
 	con << 360.0 / (2 * M_PI), 0,
@@ -169,8 +169,8 @@ void damping_control(const MatrixBase<DerivedA>& Fh, MatrixBase<DerivedB>& U, Ma
 		//AxisDirection:3*3 AxisPosition:3*3 Bh:4*4
 		//这里的Bh输出的是一个4*4的矩阵，在灿神的文本中这个叫做B_hat.然后h2V是把矩阵变成向量。
 		//这里的bb[i]是一个6*1的向量
-		CalcTwist(AxisDirection[i], AxisPosition[i], Bh[i]);
-		h2V(Bh[i], bb[i]);
+		CalculateSpinor(AxisDirection[i], AxisPosition[i], Bh[i]);
+		MatrixToVector(Bh[i], bb[i]);
 	}
 	/*
 	这里的m应该是ζhat，这一点我还不知道是什么东西。
@@ -217,14 +217,17 @@ void damping_control(const MatrixBase<DerivedA>& Fh, MatrixBase<DerivedB>& U, Ma
 	Ub = con*(p_X*Co*Fh*Fc*0.1);
 }
 
+template<typename DerivedA>
+void TauExport(const MatrixBase<DerivedA>) {
 
+}
 
 template<typename DerivedA, typename DerivedB>
 void fwd_geo_kineB(const MatrixBase<DerivedA>& theta, MatrixBase<DerivedB>& T0h) {
 	Matrix4d exp_m[5];
 	Matrix4d Bh[5];
 	for (size_t i = 0; i < 5; ++i) {
-		CalcTwist(AxisDirection[i], AxisPosition[i], Bh[i]);
+		CalculateSpinor(AxisDirection[i], AxisPosition[i], Bh[i]);
 		exp_m[i] = Bh[i] * (2 * M_PI / 360)*theta(i);
 	}
 	Matrix4d T0h0;
@@ -233,7 +236,7 @@ void fwd_geo_kineB(const MatrixBase<DerivedA>& theta, MatrixBase<DerivedB>& T0h)
 		0, 1, 0, 0,
 		0, 0, 1, ShoulderWidth,
 		0, 0, 0, 1;
-	T0h = T0h0*(exp_m[0].exp())*(exp_m[1].exp())*(exp_m[2].exp())*(exp_m[3].exp())*(exp_m[4].exp());
+	T0h = T0h0 * (exp_m[0].exp())*(exp_m[1].exp())*(exp_m[2].exp())*(exp_m[3].exp())*(exp_m[4].exp());
 }
 template<typename DerivedA>
 void Euler2RotMat(double IMU_yaw, double IMU_pitch, double IMU_roll, MatrixBase<DerivedA>& R) {
