@@ -13,9 +13,22 @@ const double ShoulderWidth = 0.297;
 const double ShoulderLength = 0.435;
 const double UpperArmLength = 0.296;
 const double LowerArmLength = 0.384;
+const double guide = 0.07;
+const double shouler_installationsite_to_coordinate4 = 0.140;
+const double elbow_installationsite_to_coordinate5 = 0.150;
+const double d1 = 0.23;
+const double d2 = 0.4683;
+const double d3 = 0.307;
+const double d4 = 0.276 + guide;
+const double d5 = 0.174;
+const double r5 = 0.074;
+const double dy_2 = 0.087;
+const double dz_2 = 0.188;
 const double InitAngle[5] = {
 	0, 0, 0, 0, 15
 };
+
+MatrixXd jacobian(6, 5);
 
 //#define LEFT_ARM 1
 #ifdef LEFT_ARM
@@ -38,31 +51,18 @@ const Vector3d AxisPosition[5] = {
 };
 #else
 const Vector3d AxisDirection[5] = {
-	//Vector3d(-1,0,0),
-	//Vector3d(0,0,-1),
-	//Vector3d(0,-1,0),
-	//Vector3d(0,-1,0),
-	//Vector3d(1,0,0)
-
-
-	Vector3d(1,0,0),
-	Vector3d(0,1,0),
-	Vector3d(0,0,1),
-	Vector3d(0,0,1),
-	Vector3d(-1,0,0)
+	Vector3d(-1,0,0),
+	Vector3d(0,0,-1),
+	Vector3d(0,-1,0),
+	Vector3d(0,-1,0),
+	Vector3d(1,0,0)
 };
 const Vector3d AxisPosition[5] = {
-	//Vector3d(-UpperArmLength - LowerArmLength,0,0),
-	//Vector3d(-UpperArmLength - LowerArmLength,0,0),
-	//Vector3d(-UpperArmLength - LowerArmLength,0,0),
-	//Vector3d(-LowerArmLength,0,0),
-	//Vector3d(-LowerArmLength,0,0)
-
-	Vector3d(0,0,0),
-	Vector3d(UpperArmLength + LowerArmLength,0,0),
-	Vector3d(UpperArmLength + LowerArmLength,0,0),
-	Vector3d(LowerArmLength,0,0),
-	Vector3d(0,0,0)
+	Vector3d(-UpperArmLength - LowerArmLength,0,0),
+	Vector3d(-UpperArmLength - LowerArmLength,0,0),
+	Vector3d(-UpperArmLength - LowerArmLength,0,0),
+	Vector3d(-LowerArmLength,0,0),
+	Vector3d(-LowerArmLength,0,0)
 };
 #endif
 
@@ -149,7 +149,7 @@ void damping_control(const MatrixBase<DerivedA>& Fh, MatrixBase<DerivedB>& U, Ma
 	VectorXd d(5);
 	VectorXd diag(6);
 
-	MatrixXd jacobian(6, 5);
+
 	MatrixXd p_X(2, 6);
 	MatrixXd Co(2, 2);
 	VectorXd Co_tem(6);
@@ -217,9 +217,44 @@ void damping_control(const MatrixBase<DerivedA>& Fh, MatrixBase<DerivedB>& U, Ma
 	Ub = con*(p_X*Co*Fh*Fc*0.1);
 }
 
-template<typename DerivedA>
-void TauExport(const MatrixBase<DerivedA>) {
+template<typename DerivedA, typename DerivedB>
+void TauExport(const MatrixBase<DerivedA>& motorangle,const MatrixBase<DerivedB>& six_sensor_data) {
+	Matrix3d axisdirection_hat[4];
+	Matrix3d spinor_hat[4];
+	Matrix3d so3[4] ;
+	Matrix3d SO3[4];
 
+	Vector3d joint_angle[4];
+	Vector3d pa2_5 = Vector3d(0, 0, d4 - elbow_installationsite_to_coordinate5 - d5);
+	Vector3d pa1_3 = Vector3d(d3 - shouler_installationsite_to_coordinate4, 0, 0);
+	Vector3d f2_5;
+	Vector3d f1_3;
+	Vector3d p5_4 = Vector3d(0, -d5, -r5);
+	Vector3d p4_3 = Vector3d(d3, 0, 0);
+	Vector3d p3_2 = Vector3d(0, dy_2, dz_2);
+	Vector3d p2_1 = vector3d(0, -d1, -d2);
+
+	VectorXd moment(6);
+
+	MotorAngleToJointAngle(motorangle, joint_angle)
+
+	//罗德里格斯公式,这里只计算了轴2到轴5
+	for (int i = 0; i < 4; ++i) {
+		XmultiToDotmulti(AxisDirection[i + 1], axisdirection_hat[i])
+		so3[i] = axisdirection_hat[i] * (M_PI / 180)*	joint_angle[i + 1];
+		SO3[i] = so3[i].exp();
+	}
+
+	moment = jacobian * six_sensor_data;
+}
+
+//用来将叉乘转成点乘
+template<typename DerivedA, typename DerivedB>
+void XmultiToDotmulti(const MatrixBase<DerivedA>& axis, MatrixBase<DerivedB>& axis_hat) {	
+	axis_hat <<
+		0, -axis(2), axis(1),
+		axis(2), 0, -axis(0),
+		-axis(1), axis(0), 0;
 }
 
 template<typename DerivedA, typename DerivedB>
